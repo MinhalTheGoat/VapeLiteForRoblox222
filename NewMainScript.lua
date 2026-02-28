@@ -624,157 +624,41 @@ run(function()
 				})
 			end)
 
-	run(function()
-		local ReachModule
-		local Attack
-		local Mine
-		local Place
-		local oldAttackReach, oldMineReach
-		local oldIsAllowedPlacement
+run(function()
+    local ReachModule
+    local Range
 
-		ReachModule = vapelite:CreateModule({
-			Name = 'Reach',
-			Function = function(callback)
-				if callback then
-					oldAttackReach = bedwars.CombatConstant and bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE
-					if bedwars.CombatConstant then
-						bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
-					end
+    ReachModule = vapelite:CreateModule({
+        Name = 'Reach',
+        Tooltip = 'Extends attack reach',
+        Function = function(callback)
+            if callback then
+                -- This loop ensures the value stays set even if the game tries to reset it
+                ReachModule:Clean(runService.Heartbeat:Connect(function()
+                    pcall(function()
+                        if bedwars.CombatConstant then
+                            -- 14.4 is the default Bedwars reach
+                            bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4 + Range.Value
+                        end
+                    end)
+                end))
+            else
+                -- Reset to default when toggled off
+                if bedwars.CombatConstant then
+                    bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4
+                end
+            end
+        end
+    })
 
-					task.spawn(function()
-						repeat task.wait(0.1) until bedwars.BlockBreakController or not ReachModule.Enabled
-						if not ReachModule.Enabled then return end
-						pcall(function()
-							local blockBreaker = bedwars.BlockBreakController:getBlockBreaker()
-							if blockBreaker then
-								oldMineReach = oldMineReach or blockBreaker:getRange()
-								blockBreaker:setRange(Mine.Value)
-							end
-						end)
-					end)
-
-					task.spawn(function()
-						repeat task.wait(0.1) until bedwars.BlockEngine or not ReachModule.Enabled
-						if not ReachModule.Enabled then return end
-						pcall(function()
-							if not oldIsAllowedPlacement then
-								oldIsAllowedPlacement = bedwars.BlockEngine.isAllowedPlacement
-								bedwars.BlockEngine.isAllowedPlacement = function(self, player, blockType, position, rotation, mouseBlockInfo)
-									local result = oldIsAllowedPlacement(self, player, blockType, position, rotation, mouseBlockInfo)
-									if not result and player == lplr then
-										local blockExists = self:getStore():getBlockAt(position)
-										if not blockExists then return true end
-									end
-									return result
-								end
-							end
-						end)
-					end)
-
-					task.spawn(function()
-						repeat task.wait(0.1) until bedwars.BlockPlacementController or not ReachModule.Enabled
-						if not ReachModule.Enabled then return end
-						pcall(function()
-							local blockPlacer = bedwars.BlockPlacementController:getBlockPlacer()
-							if blockPlacer and blockPlacer.blockHighlighter then
-								blockPlacer.blockHighlighter:setRange(Place.Value)
-								blockPlacer.blockHighlighter.range = Place.Value
-							end
-						end)
-					end)
-
-					task.spawn(function()
-						while ReachModule.Enabled do
-							if bedwars.CombatConstant and bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE ~= Attack.Value + 2 then
-								bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
-							end
-							pcall(function()
-								local blockBreaker = bedwars.BlockBreakController:getBlockBreaker()
-								if blockBreaker and blockBreaker:getRange() ~= Mine.Value then
-									blockBreaker:setRange(Mine.Value)
-								end
-							end)
-							pcall(function()
-								local blockPlacer = bedwars.BlockPlacementController:getBlockPlacer()
-								if blockPlacer and blockPlacer.blockHighlighter then
-									if blockPlacer.blockHighlighter.range ~= Place.Value then
-										blockPlacer.blockHighlighter:setRange(Place.Value)
-										blockPlacer.blockHighlighter.range = Place.Value
-									end
-								end
-							end)
-							task.wait(0.5)
-						end
-					end)
-				else
-					if bedwars.CombatConstant then
-						bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = oldAttackReach or 14.4
-					end
-					pcall(function()
-						local blockBreaker = bedwars.BlockBreakController:getBlockBreaker()
-						if blockBreaker then blockBreaker:setRange(oldMineReach or 18) end
-					end)
-					pcall(function()
-						local blockPlacer = bedwars.BlockPlacementController:getBlockPlacer()
-						if blockPlacer and blockPlacer.blockHighlighter then
-							blockPlacer.blockHighlighter:setRange(18)
-							blockPlacer.blockHighlighter.range = 18
-						end
-					end)
-					if oldIsAllowedPlacement then
-						pcall(function() bedwars.BlockEngine.isAllowedPlacement = oldIsAllowedPlacement end)
-					end
-					oldAttackReach, oldMineReach, oldIsAllowedPlacement = nil, nil, nil
-				end
-			end,
-			Tooltip = 'extends reach for attacking, mining, and placing'
-		})
-
-		Reach = ReachModule
-
-		Attack = ReachModule:CreateSlider({
-			Name = 'attack range',
-			Min = 0,
-			Max = 20,
-			Default = 18,
-			Suffix = function(val) return val == 1 and 'stud' or 'studs' end
-		})
-
-		Mine = ReachModule:CreateSlider({
-			Name = 'mine range',
-			Min = 0,
-			Max = 30,
-			Default = 18,
-			Function = function(val)
-				if ReachModule.Enabled then
-					pcall(function()
-						local blockBreaker = bedwars.BlockBreakController:getBlockBreaker()
-						if blockBreaker then blockBreaker:setRange(val) end
-					end)
-				end
-			end,
-			Suffix = function(val) return val == 1 and 'stud' or 'studs' end
-		})
-
-		Place = ReachModule:CreateSlider({
-			Name = 'place range',
-			Min = 0,
-			Max = 30,
-			Default = 18,
-			Function = function(val)
-				if ReachModule.Enabled then
-					pcall(function()
-						local blockPlacer = bedwars.BlockPlacementController:getBlockPlacer()
-						if blockPlacer and blockPlacer.blockHighlighter then
-							blockPlacer.blockHighlighter:setRange(val)
-							blockPlacer.blockHighlighter.range = val
-						end
-					end)
-				end
-			end,
-			Suffix = function(val) return val == 1 and 'stud' or 'studs' end
-		})
-	end)
+    Range = ReachModule:CreateSlider({
+        Name = 'Extra Range',
+        Min = 0,
+        Max = 4, -- Staying under 4 is safer for your account
+        Default = 3,
+        Function = function() end
+    })
+end)
 
 			run(function()
 				local Velocity
