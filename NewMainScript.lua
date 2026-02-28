@@ -737,11 +737,6 @@ run(function()
 			Min = 0,
 			Max = 20,
 			Default = 18,
-			Function = function(val)
-				if ReachModule.Enabled and bedwars.CombatConstant then
-					bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = val + 2
-				end
-			end,
 			Suffix = function(val) return val == 1 and 'stud' or 'studs' end
 		})
 
