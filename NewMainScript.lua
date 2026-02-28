@@ -501,11 +501,6 @@ run(function()
 				end})
 			end)
 
-			local function refreshMissCooldown()
-    -- The constant index 58 is likely incorrect for the current game version.
-    -- To stop the crash, we disable this specific hook.
-    -- debug.setconstant(bedwars.SwordController.attackEntity, 58, 'multiHitCheckDurationSec') 
-end
 
 			--[[
 				Combat
