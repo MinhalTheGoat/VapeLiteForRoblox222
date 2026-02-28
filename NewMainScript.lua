@@ -351,6 +351,8 @@ run(function()
 					AppController = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out.client.controllers['app-controller']).AppController,
 					AttackRemote = dumpRemote(debug.getconstants(KnitClient.Controllers.SwordController.sendServerRequest)),
 					BlockBreaker = KnitClient.Controllers.BlockBreakController.blockBreaker,
+					CombatConstant = require(replicatedStorage.TS.combat['combat-constant']).CombatConstant, 
+   					ItemMeta = debug.getupvalue(require(replicatedStorage.TS.item['item-meta']).getItemMeta, 1),
 					Client = Client,
 					ItemMeta = debug.getupvalue(require(replicatedStorage.TS.item['item-meta']).getItemMeta, 1),
 					KnockbackUtil = require(replicatedStorage.TS.damage['knockback-util']).KnockbackUtil,
