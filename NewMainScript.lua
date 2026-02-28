@@ -756,7 +756,6 @@ run(function()
 				AutoCharge = vapelite:CreateModule({
 					Name = 'AutoCharge',
 					Function = function(callback)
-						refreshMissCooldown()
 						if callback then
 							AutoCharge:Clean(swingPreEvent.Event:Connect(function()
 								bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - 0.5
