@@ -500,8 +500,10 @@ run(function()
 			end)
 
 			local function refreshMissCooldown()
-				debug.setconstant(bedwars.SwordController.attackEntity, 58, (AutoCharge.Enabled or Killaura.Enabled or Reach.Enabled) and 'damage' or 'multiHitCheckDurationSec')
-			end
+    -- The constant index 58 is likely incorrect for the current game version.
+    -- To stop the crash, we disable this specific hook.
+    -- debug.setconstant(bedwars.SwordController.attackEntity, 58, 'multiHitCheckDurationSec') 
+end
 
 			--[[
 				Combat
