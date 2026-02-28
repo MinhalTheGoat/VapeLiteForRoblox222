@@ -631,49 +631,40 @@ end
 
 run(function()
     local ReachModule
-    local Attack
+    local Range
     local oldReach = 14.4
 
     ReachModule = vapelite:CreateModule({
         Name = 'Reach',
-        Tooltip = 'Extends attack reach',
+        Tooltip = 'Extends attack reach distance',
         Function = function(callback)
             if callback then
-                -- Backup and Set
-                task.spawn(function()
-                    while ReachModule.Enabled do
-                        pcall(function()
-                            if bedwars.CombatConstant then
-                                bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
-                            end
-                        end)
-                        task.wait(0.5)
-                    end
-                end)
-            else
-                -- Reset
-                pcall(function()
+                -- The "Heartbeat" loop ensures the game doesn't reset the value
+                ReachModule:Clean(runService.Heartbeat:Connect(function()
                     if bedwars.CombatConstant then
-                        bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4
+                        bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4 + Range.Value
                     end
-                end)
+                end))
+            else
+                -- Reset to default Bedwars reach when turned off
+                if bedwars.CombatConstant then
+                    bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4
+                end
             end
         end
     })
 
-    Attack = ReachModule:CreateSlider({
+    Range = ReachModule:CreateSlider({
         Name = 'Range',
         Min = 0,
-        Max = 18,
-        Default = 3, -- This adds to the base 14.4
+        Max = 4, -- Set to 4 max to stay under the "Experimental" ban limit
+        Default = 3,
         Function = function(val)
             if ReachModule.Enabled and bedwars.CombatConstant then
-                bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = val + 2
+                bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4 + val
             end
         end
     })
-    
-    Reach = ReachModule
 end)
 
 			run(function()
