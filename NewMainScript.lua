@@ -627,14 +627,12 @@ end
 				})
 			end)
 
-			run(function()
-				local Value
-				local Moving
-				local mouse = lplr:GetMouse()
-				local rayparams = RaycastParams.new()
-				rayparams.FilterType = Enum.RaycastFilterType.Exclude
+run(function()
+    local ReachModule
+    local Attack
+    local oldAttackReach
 
-ReachModule = vapelite:CreateModule({
+    ReachModule = vapelite:CreateModule({
         Name = 'Reach',
         Function = function(callback)
             if callback then
