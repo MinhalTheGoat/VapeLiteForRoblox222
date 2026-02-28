@@ -634,63 +634,52 @@ end
 				local rayparams = RaycastParams.new()
 				rayparams.FilterType = Enum.RaycastFilterType.Exclude
 
-				Reach = vapelite:CreateModule({
-					Name = 'Reach',
-					Function = function(callback)
-						if callback then
-							refreshMissCooldown()
-							Reach:Clean(swingEvent.Event:Connect(function(chargeRatio)
-								rayparams.FilterDescendantsInstances = {lplr.Character}
-								local ray = bedwars.QueryUtil:raycast(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 200, rayparams)
-								if ray and ray.Instance and (ray.Instance.Position - entitylib.character.RootPart.Position).Magnitude <= Value.Value + 2 then
-									local plr
-									for _, v in entitylib.List do
-										if ray.Instance:IsDescendantOf(v.Character) then
-											plr = v
-											break
-										end
-									end
+ReachModule = vapelite:CreateModule({
+        Name = 'Reach',
+        Function = function(callback)
+            if callback then
+                -- Store the original reach so we can reset it later
+                if bedwars.CombatConstant then
+                    oldAttackReach = bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE
+                    bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
+                end
 
-									if plr then
-										if not bedwars.SwordController:canSee({getInstance = function() return plr.Character end}) then return end
-										local selfrootpos = entitylib.character.RootPart.Position
-										local delta = (plr.RootPart.Position - selfrootpos)
-										if Moving.Enabled and entitylib.character.RootPart.Velocity.Magnitude < 3 then return end
+                -- A loop to ensure the value stays set if the game tries to revert it
+                task.spawn(function()
+                    while ReachModule.Enabled do
+                        if bedwars.CombatConstant and bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE ~= Attack.Value + 2 then
+                            bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
+                        end
+                        task.wait(0.5)
+                    end
+                end)
+            else
+                -- Reset to original value or the game default (14.4) when disabled
+                if bedwars.CombatConstant then
+                    bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = oldAttackReach or 14.4
+                end
+                oldAttackReach = nil
+            end
+        end,
+        Tooltip = 'Extends attack reach by modifying CombatConstants'
+    })
 
-										local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
-										if delta.Magnitude < 14.4 and AutoCharge.Enabled and (os.clock() - chargeSwingTime) < AutoChargeTime.Value / 100 then return end
-										canSwing = true
-										chargeSwingTime = os.clock()
-
-										bedwars.Client:Get(bedwars.AttackRemote):SendToServer({
-											weapon = store.hand.tool,
-											chargedAttack = {chargeRatio = 0},
-											lastSwingServerTimeDelta = swingDelta,
-											entityInstance = plr.Character,
-											validate = {
-												raycast = {
-													cameraPosition = {value = gameCamera.CFrame.Position},
-													cursorDirection = {value = CFrame.lookAt(gameCamera.CFrame.Position, plr.RootPart.Position).LookVector}
-												},
-												targetPosition = {value = plr.RootPart.Position},
-												selfPosition = {value = selfrootpos + CFrame.lookAt(selfrootpos, plr.RootPart.Position).LookVector * math.max(delta.Magnitude - 14.399, 0)}
-											}
-										})
-									end
-								end
-							end))
-						end
-					end,
-					Tooltip = 'Extends attack reach'
-				})
-				Value = Reach:CreateSlider({
-					Name = 'Range',
-					Min = 0,
-					Max = 22,
-					Default = 22
-				})
-				Moving = Reach:CreateToggle({Name = 'Only while moving'})
-			end)
+    Attack = ReachModule:CreateSlider({
+        Name = 'Attack Range',
+        Min = 0,
+        Max = 20,
+        Default = 18,
+        Function = function(val)
+            if ReachModule.Enabled and bedwars.CombatConstant then
+                bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = val + 2
+            end
+        end,
+        Suffix = function(val) return val == 1 and ' stud' or ' studs' end
+    })
+    
+    -- Assigning it back to the global Reach variable used in your main script
+    Reach = ReachModule
+end)
 
 			run(function()
 				local Velocity
