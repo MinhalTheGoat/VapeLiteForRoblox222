@@ -752,7 +752,6 @@ run(function()
 					Name = 'Killaura',
 					Function = function(callback)
 						if callback then
-							local animTime = os.clock()
 							Killaura:Clean(swingEvent.Event:Connect(function(chargeRatio)
 								local plr = getEntitiesNear(AttackRange.Value)
 								if plr and store.hand.Type == 'sword' then
