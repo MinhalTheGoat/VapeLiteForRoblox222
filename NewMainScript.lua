@@ -499,10 +499,6 @@ run(function()
 				end})
 			end)
 
-			local function refreshMissCooldown()
-				debug.setconstant(bedwars.SwordController.attackEntity, 58, (AutoCharge.Enabled or Killaura.Enabled or Reach.Enabled) and 'damage' or 'multiHitCheckDurationSec')
-			end
-
 			--[[
 				Combat
 			]]
