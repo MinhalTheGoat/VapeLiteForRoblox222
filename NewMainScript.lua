@@ -830,17 +830,9 @@ run(function()
 									if Moving.Enabled and entitylib.character.RootPart.Velocity.Magnitude < 3 then return end
 
 									local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
-									local targetTime = AutoChargeTime.Value / 100
-									if delta.Magnitude < 14.4 and AutoCharge.Enabled and (os.clock() - chargeSwingTime) < targetTime then return end
+									if delta.Magnitude < 14.4 and ChargeTime.Value > 0.11 then return end
 									canSwing = true
-									chargeSwingTime = os.clock()
 
-									if AutoCharge.Enabled then
-										canSwing = (os.clock() - chargeSwingTime) < targetTime or (os.clock() - animTime) < targetTime
-										if canSwing then
-											animTime = os.clock()
-										end
-									end
 
 									AttackRemote:SendToServer({
 										weapon = store.hand.tool,
