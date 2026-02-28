@@ -620,71 +620,7 @@ run(function()
 					Default = true
 				})
 			end)
-
-			run(function()
-				local Value
-				local Moving
-				local mouse = lplr:GetMouse()
-				local rayparams = RaycastParams.new()
-				rayparams.FilterType = Enum.RaycastFilterType.Exclude
-
-				Reach = vapelite:CreateModule({
-					Name = 'Reach',
-					Function = function(callback)
-						if callback then
-							Reach:Clean(swingEvent.Event:Connect(function(chargeRatio)
-								rayparams.FilterDescendantsInstances = {lplr.Character}
-								local ray = bedwars.QueryUtil:raycast(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 200, rayparams)
-								if ray and ray.Instance and (ray.Instance.Position - entitylib.character.RootPart.Position).Magnitude <= Value.Value + 2 then
-									local plr
-									for _, v in entitylib.List do
-										if ray.Instance:IsDescendantOf(v.Character) then
-											plr = v
-											break
-										end
-									end
-
-									if plr then
-										if not bedwars.SwordController:canSee({getInstance = function() return plr.Character end}) then return end
-										local selfrootpos = entitylib.character.RootPart.Position
-										local delta = (plr.RootPart.Position - selfrootpos)
-										if Moving.Enabled and entitylib.character.RootPart.Velocity.Magnitude < 3 then return end
-
-										local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
-										if delta.Magnitude < 14.4 and AutoCharge.Enabled and (os.clock() - chargeSwingTime) < AutoChargeTime.Value / 100 then return end
-										canSwing = true
-										chargeSwingTime = os.clock()
-
-										bedwars.Client:Get(bedwars.AttackRemote):SendToServer({
-											weapon = store.hand.tool,
-											chargedAttack = {chargeRatio = 0},
-											lastSwingServerTimeDelta = swingDelta,
-											entityInstance = plr.Character,
-											validate = {
-												raycast = {
-													cameraPosition = {value = gameCamera.CFrame.Position},
-													cursorDirection = {value = CFrame.lookAt(gameCamera.CFrame.Position, plr.RootPart.Position).LookVector}
-												},
-												targetPosition = {value = plr.RootPart.Position},
-												selfPosition = {value = selfrootpos + CFrame.lookAt(selfrootpos, plr.RootPart.Position).LookVector * math.max(delta.Magnitude - 14.399, 0)}
-											}
-										})
-									end
-								end
-							end))
-						end
-					end,
-					Tooltip = 'Extends attack reach'
-				})
-				Value = Reach:CreateSlider({
-					Name = 'Range',
-					Min = 0,
-					Max = 22,
-					Default = 22
-				})
-				Moving = Reach:CreateToggle({Name = 'Only while moving'})
-			end)
-
+						
 			run(function()
 				local Velocity
 				local Horizontal
@@ -758,7 +694,7 @@ run(function()
 					Function = function(callback)
 						if callback then
 							AutoCharge:Clean(swingPreEvent.Event:Connect(function()
-								bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - 0.5
+								bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - tick()
 							end))
 
 							old = bedwars.SwordController.sendServerRequest
@@ -827,12 +763,11 @@ run(function()
 									local delta = (plr.RootPart.Position - selfrootpos)
 									local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
 									if angle > (math.rad(Angle.Value) / 2) then return end
-									if Moving.Enabled and entitylib.character.RootPart.Velocity.Magnitude < 3 then return end
 
 									local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
-									if delta.Magnitude < 14.4 and ChargeTime.Value > 0.11 then return end
-									canSwing = true
-
+									if delta.Magnitude < 14.4 and ChargeTime.Value > 0.11 then 
+										canSwing = true
+									end
 
 									AttackRemote:SendToServer({
 										weapon = store.hand.tool,
@@ -866,7 +801,6 @@ run(function()
 					Max = 360,
 					Default = 100
 				})
-				Moving = Killaura:CreateToggle({Name = 'Only while moving'})
 			end)
 
 			--[[
