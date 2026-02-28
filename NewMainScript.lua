@@ -817,7 +817,6 @@ run(function()
 				Killaura = vapelite:CreateModule({
 					Name = 'Killaura',
 					Function = function(callback)
-						refreshMissCooldown()
 						if callback then
 							local animTime = os.clock()
 							Killaura:Clean(swingEvent.Event:Connect(function(chargeRatio)
