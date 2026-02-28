@@ -351,8 +351,6 @@ run(function()
 					AppController = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out.client.controllers['app-controller']).AppController,
 					AttackRemote = dumpRemote(debug.getconstants(KnitClient.Controllers.SwordController.sendServerRequest)),
 					BlockBreaker = KnitClient.Controllers.BlockBreakController.blockBreaker,
-					CombatConstant = require(replicatedStorage.TS.combat['combat-constant']).CombatConstant, 
-   					ItemMeta = debug.getupvalue(require(replicatedStorage.TS.item['item-meta']).getItemMeta, 1),
 					Client = Client,
 					ItemMeta = debug.getupvalue(require(replicatedStorage.TS.item['item-meta']).getItemMeta, 1),
 					KnockbackUtil = require(replicatedStorage.TS.damage['knockback-util']).KnockbackUtil,
@@ -501,6 +499,9 @@ run(function()
 				end})
 			end)
 
+			local function refreshMissCooldown()
+				debug.setconstant(bedwars.SwordController.attackEntity, 58, (AutoCharge.Enabled or Killaura.Enabled or Reach.Enabled) and 'damage' or 'multiHitCheckDurationSec')
+			end
 
 			--[[
 				Combat
@@ -624,41 +625,70 @@ run(function()
 				})
 			end)
 
-run(function()
-    local ReachModule
-    local Range
+			run(function()
+				local Value
+				local Moving
+				local mouse = lplr:GetMouse()
+				local rayparams = RaycastParams.new()
+				rayparams.FilterType = Enum.RaycastFilterType.Exclude
 
-    ReachModule = vapelite:CreateModule({
-        Name = 'Reach',
-        Tooltip = 'Extends attack reach',
-        Function = function(callback)
-            if callback then
-                -- This loop ensures the value stays set even if the game tries to reset it
-                ReachModule:Clean(runService.Heartbeat:Connect(function()
-                    pcall(function()
-                        if bedwars.CombatConstant then
-                            -- 14.4 is the default Bedwars reach
-                            bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4 + Range.Value
-                        end
-                    end)
-                end))
-            else
-                -- Reset to default when toggled off
-                if bedwars.CombatConstant then
-                    bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4
-                end
-            end
-        end
-    })
+				Reach = vapelite:CreateModule({
+					Name = 'Reach',
+					Function = function(callback)
+						if callback then
+							refreshMissCooldown()
+							Reach:Clean(swingEvent.Event:Connect(function(chargeRatio)
+								rayparams.FilterDescendantsInstances = {lplr.Character}
+								local ray = bedwars.QueryUtil:raycast(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 200, rayparams)
+								if ray and ray.Instance and (ray.Instance.Position - entitylib.character.RootPart.Position).Magnitude <= Value.Value + 2 then
+									local plr
+									for _, v in entitylib.List do
+										if ray.Instance:IsDescendantOf(v.Character) then
+											plr = v
+											break
+										end
+									end
 
-    Range = ReachModule:CreateSlider({
-        Name = 'Extra Range',
-        Min = 0,
-        Max = 4, -- Staying under 4 is safer for your account
-        Default = 3,
-        Function = function() end
-    })
-end)
+									if plr then
+										if not bedwars.SwordController:canSee({getInstance = function() return plr.Character end}) then return end
+										local selfrootpos = entitylib.character.RootPart.Position
+										local delta = (plr.RootPart.Position - selfrootpos)
+										if Moving.Enabled and entitylib.character.RootPart.Velocity.Magnitude < 3 then return end
+
+										local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
+										if delta.Magnitude < 14.4 and AutoCharge.Enabled and (os.clock() - chargeSwingTime) < AutoChargeTime.Value / 100 then return end
+										canSwing = true
+										chargeSwingTime = os.clock()
+
+										bedwars.Client:Get(bedwars.AttackRemote):SendToServer({
+											weapon = store.hand.tool,
+											chargedAttack = {chargeRatio = 0},
+											lastSwingServerTimeDelta = swingDelta,
+											entityInstance = plr.Character,
+											validate = {
+												raycast = {
+													cameraPosition = {value = gameCamera.CFrame.Position},
+													cursorDirection = {value = CFrame.lookAt(gameCamera.CFrame.Position, plr.RootPart.Position).LookVector}
+												},
+												targetPosition = {value = plr.RootPart.Position},
+												selfPosition = {value = selfrootpos + CFrame.lookAt(selfrootpos, plr.RootPart.Position).LookVector * math.max(delta.Magnitude - 14.399, 0)}
+											}
+										})
+									end
+								end
+							end))
+						end
+					end,
+					Tooltip = 'Extends attack reach'
+				})
+				Value = Reach:CreateSlider({
+					Name = 'Range',
+					Min = 0,
+					Max = 22,
+					Default = 22
+				})
+				Moving = Reach:CreateToggle({Name = 'Only while moving'})
+			end)
 
 			run(function()
 				local Velocity
