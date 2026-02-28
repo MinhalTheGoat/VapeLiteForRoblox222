@@ -632,52 +632,47 @@ end
 run(function()
     local ReachModule
     local Attack
-    local oldAttackReach
+    local oldReach = 14.4
 
     ReachModule = vapelite:CreateModule({
         Name = 'Reach',
+        Tooltip = 'Extends attack reach',
         Function = function(callback)
             if callback then
-                -- Store the original reach so we can reset it later
-                if bedwars.CombatConstant then
-                    oldAttackReach = bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE
-                    bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
-                end
-
-                -- A loop to ensure the value stays set if the game tries to revert it
+                -- Backup and Set
                 task.spawn(function()
                     while ReachModule.Enabled do
-                        if bedwars.CombatConstant and bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE ~= Attack.Value + 2 then
-                            bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
-                        end
+                        pcall(function()
+                            if bedwars.CombatConstant then
+                                bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Attack.Value + 2
+                            end
+                        end)
                         task.wait(0.5)
                     end
                 end)
             else
-                -- Reset to original value or the game default (14.4) when disabled
-                if bedwars.CombatConstant then
-                    bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = oldAttackReach or 14.4
-                end
-                oldAttackReach = nil
+                -- Reset
+                pcall(function()
+                    if bedwars.CombatConstant then
+                        bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4
+                    end
+                end)
             end
-        end,
-        Tooltip = 'Extends attack reach by modifying CombatConstants'
+        end
     })
 
     Attack = ReachModule:CreateSlider({
-        Name = 'Attack Range',
+        Name = 'Range',
         Min = 0,
-        Max = 20,
-        Default = 18,
+        Max = 18,
+        Default = 3, -- This adds to the base 14.4
         Function = function(val)
             if ReachModule.Enabled and bedwars.CombatConstant then
                 bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = val + 2
             end
-        end,
-        Suffix = function(val) return val == 1 and ' stud' or ' studs' end
+        end
     })
     
-    -- Assigning it back to the global Reach variable used in your main script
     Reach = ReachModule
 end)
 
