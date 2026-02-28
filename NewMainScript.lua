@@ -768,7 +768,7 @@ run(function()
 										canSwing = true
 									end
 
-									AttackRemote:SendToServer({
+									AttackRemote:FireServer({
 										weapon = store.hand.tool,
 										chargedAttack = {chargeRatio = 0},
 										lastSwingServerTimeDelta = swingDelta,
