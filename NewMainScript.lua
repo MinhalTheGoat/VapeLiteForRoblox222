@@ -632,7 +632,6 @@ run(function()
 					Name = 'Reach',
 					Function = function(callback)
 						if callback then
-							refreshMissCooldown()
 							Reach:Clean(swingEvent.Event:Connect(function(chargeRatio)
 								rayparams.FilterDescendantsInstances = {lplr.Character}
 								local ray = bedwars.QueryUtil:raycast(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 200, rayparams)
