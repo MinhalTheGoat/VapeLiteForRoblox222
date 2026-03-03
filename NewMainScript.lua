@@ -499,6 +499,10 @@ run(function()
 				end})
 			end)
 
+		    local function refreshMissCooldown()
+        debug.setconstant(bedwars.SwordController.attackEntity, 58, (Killaura.Enabled or Reach.Enabled) and 'damage' or 'multiHitCheckDurationSec')
+    end
+
 			--[[
 				Combat
 			]]
@@ -620,7 +624,88 @@ run(function()
 					Default = true
 				})
 			end)
-						
+
+run(function()
+    local Value
+    local Moving
+
+    local mouse = lplr:GetMouse()
+    local rayparams = RaycastParams.new()
+    rayparams.FilterType = Enum.RaycastFilterType.Exclude
+
+    Reach = vapelite:CreateModule({
+        Name = 'Reach',
+        Function = function(callback)
+            if callback then
+                refreshMissCooldown()
+
+                Reach:Clean(swingEvent.Event:Connect(function()
+                    -- Guard: must be alive, have a sword equipped
+                    if not entitylib.isAlive or store.hand.Type ~= 'sword' then return end
+
+                    rayparams.FilterDescendantsInstances = {lplr.Character}
+                    local ray = bedwars.QueryUtil:raycast(
+                        mouse.UnitRay.Origin,
+                        mouse.UnitRay.Direction * 200,
+                        rayparams
+                    )
+
+                    if not ray or not ray.Instance then return end
+
+                    local selfrootpos = entitylib.character.RootPart.Position
+                    if (ray.Instance.Position - selfrootpos).Magnitude > Value.Value + 2 then return end
+
+                    -- Find the entity this ray hit
+                    local plr
+                    for _, v in entitylib.List do
+                        if ray.Instance:IsDescendantOf(v.Character) then
+                            plr = v
+                            break
+                        end
+                    end
+
+                    if not plr then return end
+                    if not bedwars.SwordController:canSee({getInstance = function() return plr.Character end}) then return end
+
+                    local delta = plr.RootPart.Position - selfrootpos
+                    if Moving.Enabled and entitylib.character.RootPart.Velocity.Magnitude < 3 then return end
+
+                    -- Fire the attack remote directly without charge gating
+                    local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
+                    bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - 0.5
+
+                    bedwars.Client:Get(bedwars.AttackRemote):SendToServer({
+                        weapon = store.hand.tool,
+                        chargedAttack = {chargeRatio = 0},
+                        lastSwingServerTimeDelta = swingDelta,
+                        entityInstance = plr.Character,
+                        validate = {
+                            raycast = {
+                                cameraPosition = {value = gameCamera.CFrame.Position},
+                                cursorDirection = {value = CFrame.lookAt(gameCamera.CFrame.Position, plr.RootPart.Position).LookVector}
+                            },
+                            targetPosition = {value = plr.RootPart.Position},
+                            selfPosition = {value = selfrootpos + CFrame.lookAt(selfrootpos, plr.RootPart.Position).LookVector * math.max(delta.Magnitude - 14.399, 0)}
+                        }
+                    })
+                end))
+            else
+                refreshMissCooldown()
+            end
+        end,
+        Tooltip = 'Extends attack reach'
+    })
+
+    Value = Reach:CreateSlider({
+        Name = 'Range',
+        Min = 0,
+        Max = 22,
+        Default = 22
+    })
+
+    Moving = Reach:CreateToggle({Name = 'Only while moving'})
+end)
+
 			run(function()
 				local Velocity
 				local Horizontal
@@ -692,9 +777,10 @@ run(function()
 				AutoCharge = vapelite:CreateModule({
 					Name = 'AutoCharge',
 					Function = function(callback)
+						refreshMissCooldown()
 						if callback then
 							AutoCharge:Clean(swingPreEvent.Event:Connect(function()
-								bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - tick()
+								bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - 0.5
 							end))
 
 							old = bedwars.SwordController.sendServerRequest
@@ -739,68 +825,83 @@ run(function()
 				})
 			end)
 
-			run(function()
-				local AttackRange
-				local Angle
-				local Moving
-				local AttackRemote
-				task.spawn(function()
-					AttackRemote = bedwars.Client:Get(bedwars.AttackRemote)
-				end)
+run(function()
+    local AttackRange
+    local Angle
+    local Moving
+    local AttackRemote
 
-				Killaura = vapelite:CreateModule({
-					Name = 'Killaura',
-					Function = function(callback)
-						if callback then
-							Killaura:Clean(swingEvent.Event:Connect(function(chargeRatio)
-								local plr = getEntitiesNear(AttackRange.Value)
-								if plr and store.hand.Type == 'sword' then
-									if not bedwars.SwordController:canSee({getInstance = function() return plr.Character end}) then return end
-									local selfrootpos = entitylib.character.RootPart.Position
-									local localfacing = entitylib.character.RootPart.CFrame.LookVector
+    task.spawn(function()
+        AttackRemote = bedwars.Client:Get(bedwars.AttackRemote)
+    end)
 
-									local delta = (plr.RootPart.Position - selfrootpos)
-									local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
-									if angle > (math.rad(Angle.Value) / 2) then return end
+    Killaura = vapelite:CreateModule({
+        Name = 'Killaura',
+        Function = function(callback)
+            refreshMissCooldown()
 
-									local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
-									if delta.Magnitude < 14.4 and ChargeTime.Value > 0.11 then 
-										canSwing = true
-									end
+            if callback then
+                Killaura:Clean(swingEvent.Event:Connect(function()
+                    -- Guard: must be alive and have sword
+                    if not entitylib.isAlive or store.hand.Type ~= 'sword' then return end
 
-									AttackRemote:FireServer({
-										weapon = store.hand.tool,
-										chargedAttack = {chargeRatio = 0},
-										lastSwingServerTimeDelta = swingDelta,
-										entityInstance = plr.Character,
-										validate = {
-											raycast = {
-												cameraPosition = {value = gameCamera.CFrame.Position},
-												cursorDirection = {value = CFrame.lookAt(gameCamera.CFrame.Position, plr.RootPart.Position).LookVector}
-											},
-											targetPosition = {value = plr.RootPart.Position},
-											selfPosition = {value = selfrootpos + CFrame.lookAt(selfrootpos, plr.RootPart.Position).LookVector * math.max(delta.Magnitude - 14.399, 0)}
-										}
-									})
-								end
-							end))
-						end
-					end,
-					Tooltip = 'Attack players around you without aiming at them.'
-				})
-				AttackRange = Killaura:CreateSlider({
-					Name = 'Attack range',
-					Min = 1,
-					Max = 22,
-					Default = 22
-				})
-				Angle = Killaura:CreateSlider({
-					Name = 'Max angle',
-					Min = 1,
-					Max = 360,
-					Default = 100
-				})
-			end)
+                    local plr = getEntitiesNear(AttackRange.Value)
+                    if not plr then return end
+
+                    if not bedwars.SwordController:canSee({getInstance = function() return plr.Character end}) then return end
+
+                    local selfrootpos = entitylib.character.RootPart.Position
+                    local localfacing = entitylib.character.RootPart.CFrame.LookVector
+                    local delta = plr.RootPart.Position - selfrootpos
+
+                    -- Angle check
+                    local angle = math.acos(math.clamp(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit), -1, 1))
+                    if angle > (math.rad(Angle.Value) / 2) then return end
+
+                    -- Moving-only check
+                    if Moving.Enabled and entitylib.character.RootPart.Velocity.Magnitude < 3 then return end
+
+                    -- Update server swing time so the server timing check passes
+                    bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - 0.5
+                    local swingDelta = workspace:GetServerTimeNow() - bedwars.SwordController.lastSwingServerTime
+
+                    -- Send attack — no charge gating, fires every swing
+                    AttackRemote:SendToServer({
+                        weapon = store.hand.tool,
+                        chargedAttack = {chargeRatio = 0},
+                        lastSwingServerTimeDelta = swingDelta,
+                        entityInstance = plr.Character,
+                        validate = {
+                            raycast = {
+                                cameraPosition = {value = gameCamera.CFrame.Position},
+                                cursorDirection = {value = CFrame.lookAt(gameCamera.CFrame.Position, plr.RootPart.Position).LookVector}
+                            },
+                            targetPosition = {value = plr.RootPart.Position},
+                            selfPosition = {value = selfrootpos + CFrame.lookAt(selfrootpos, plr.RootPart.Position).LookVector * math.max(delta.Magnitude - 14.399, 0)}
+                        }
+                    })
+                end))
+            end
+        end,
+        Tooltip = 'Attack players around you without aiming at them.'
+    })
+
+    AttackRange = Killaura:CreateSlider({
+        Name = 'Attack range',
+        Min = 1,
+        Max = 22,
+        Default = 22
+    })
+
+    Angle = Killaura:CreateSlider({
+        Name = 'Max angle',
+        Min = 1,
+        Max = 360,
+        Default = 100
+    })
+
+    Moving = Killaura:CreateToggle({Name = 'Only while moving'})
+end)
 
 			--[[
 				Render
