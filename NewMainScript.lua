@@ -499,10 +499,6 @@ run(function()
 				end})
 			end)
 
-		    local function refreshMissCooldown()
-        debug.setconstant(bedwars.SwordController.attackEntity, 58, (Killaura.Enabled or Reach.Enabled) and 'damage' or 'multiHitCheckDurationSec')
-    end
-
 			--[[
 				Combat
 			]]
@@ -637,7 +633,6 @@ run(function()
         Name = 'Reach',
         Function = function(callback)
             if callback then
-                refreshMissCooldown()
 
                 Reach:Clean(swingEvent.Event:Connect(function()
                     -- Guard: must be alive, have a sword equipped
@@ -690,7 +685,6 @@ run(function()
                     })
                 end))
             else
-                refreshMissCooldown()
             end
         end,
         Tooltip = 'Extends attack reach'
@@ -777,7 +771,6 @@ end)
 				AutoCharge = vapelite:CreateModule({
 					Name = 'AutoCharge',
 					Function = function(callback)
-						refreshMissCooldown()
 						if callback then
 							AutoCharge:Clean(swingPreEvent.Event:Connect(function()
 								bedwars.SwordController.lastSwingServerTime = workspace:GetServerTimeNow() - 0.5
@@ -838,7 +831,6 @@ run(function()
     Killaura = vapelite:CreateModule({
         Name = 'Killaura',
         Function = function(callback)
-            refreshMissCooldown()
 
             if callback then
                 Killaura:Clean(swingEvent.Event:Connect(function()
