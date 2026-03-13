@@ -403,8 +403,8 @@ run(function()
 					local hum = char:WaitForChild('Humanoid', 5)
 					if vapelite.Loaded == nil or not hum or not head then return end
 					local plr = playersService:GetPlayerFromCharacter(char)
-
-					if plr then
+					if not plr then return end
+							
 						local entity = {
 							Connections = {},
 							Character = char,
